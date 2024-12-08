@@ -5,6 +5,9 @@
 
 ## Installation
 - Clone this repository
+- Add the dataset to the `data` folder "data/fashion.csv"
+- Make directory {Category} based from fashion.csv in the `data` folder "data/{Category}"
+- Add images into directory {Category} from fashion.csv to the `data` folder "data/{Category}/{ImageProductId}"
 - Install the required packages
 ```bash
 pip install -r requirements.txt

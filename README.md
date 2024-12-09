@@ -5,6 +5,10 @@
 
 ## Installation
 - Clone this repository
+- Make a directory `data` in the root folder
+```bash
+    mkdir "data"
+```
 - Add the dataset to the `data` folder "data/fashion.csv"
 - Make directory {Category} based from fashion.csv in the `data` folder "data/{Category}"
 - Add images into directory {Category} from fashion.csv to the `data` folder "data/{Category}/{ImageProductId}"

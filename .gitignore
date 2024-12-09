@@ -1,2 +1,6 @@
 .venv/
 .data/
+/data/Apparel/
+/data/Footwear/
+/data/fashion.csv
+.DS_Store

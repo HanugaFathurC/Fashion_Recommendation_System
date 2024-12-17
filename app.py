@@ -49,7 +49,7 @@ def compute_embeddings(texts=None, images=None):
 
 
 # Function to find similar embeddings
-def find_similar(query_emb, embedding_matrix, top_k=5):
+def find_similar(query_emb, embedding_matrix, top_k=10):
     """
     Find the top K most similar embeddings.
 
@@ -62,8 +62,27 @@ def find_similar(query_emb, embedding_matrix, top_k=5):
         list of tuples: (index, similarity score) for top K results.
     """
     similarities = cosine_similarity(query_emb, embedding_matrix)
-    top_indices = np.argsort(similarities[0])[::-1][:top_k]  # Sort by similarity
-    return [(idx, similarities[0][idx]) for idx in top_indices]
+    sorted_indices = np.argsort(similarities[0])[::-1]  # Sort by similarity
+
+    unique_products = set()  # Track unique product IDs
+    unique_scores = set()    # Track unique similarity scores
+    results = []
+
+    for idx in sorted_indices:
+        product_id = df.iloc[idx]['ProductId']
+        score = round(similarities[0][idx], 4)
+
+        # Check for duplicates based on ProductId and Score
+        if product_id not in unique_products and score not in unique_scores:
+            unique_products.add(product_id)
+            unique_scores.add(score)
+            results.append((idx, score))
+
+        # Stop when top_k unique results are collected
+        if len(results) == top_k:
+            break
+
+    return results
 
 
 
@@ -92,20 +111,31 @@ def gradio_search(input_text=None, input_image=None):
     else:
         return "Please provide either a text or an image input.", []
 
-    results = find_similar(query_emb, text_emb if input_text else img_emb, top_k=5)
+    results = find_similar(query_emb, text_emb if input_text else img_emb, top_k=7)
 
-    # Collect results
-    images = [pil_image.open(df.iloc[idx]['image']).convert("RGB") for idx, _ in results]
-    descriptions = [f"{df.iloc[idx]['text']}\nSimilarity Score: {score:.4f}" for idx, score in results]
+    # Collect images and create descriptions
+    images = []
+    descriptions = []
 
-    return images, descriptions
+    for i, (idx, score) in enumerate(results):
+        image_path = df.iloc[idx]['image']
+        product_description = (f"{i + 1}. Product Name: {df.iloc[idx]['ProductTitle']}\n"
+                               f"   Product Type: {df.iloc[idx]['ProductType']}\n"
+                               f"   Gender: {df.iloc[idx]['Gender']}\n"
+                               f"   Similarity Score: {score:.4f}")
+
+        # Append image and structured description
+        images.append(pil_image.open(image_path).convert("RGB"))
+        descriptions.append(product_description)
+
+    return images, "\n\n".join(descriptions)
 
 
 # Gradio interface
 interface = gr.Interface(
     fn=gradio_search,
     inputs=[
-        gr.Textbox(label="Text", placeholder="Enter a description, e.g., 'Red T-shirt'"),
+        gr.Textbox(label="Text", placeholder="Enter a description, e.g., 'Red T-shirt for boys'"),
         gr.Image(label="Image", type="pil")
     ],
     outputs=[
@@ -132,4 +162,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
 
-    interface.launch(share=False) #Set true to create a sharing link
+    interface.launch(share=True) #Set true to create a sharing link
